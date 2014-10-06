@@ -1,4 +1,3 @@
-<!-- sistemas distribuidos -->
 <!DOCTYPE html>
 <html>
 	<head>
@@ -37,6 +36,10 @@
 			#nickWrap{
 				float: right;
 			}
+			#waiting{
+				float: right;
+				display: none;
+			}
 		</style>
 
 	</head>
@@ -57,12 +60,16 @@
 				<input type="submit" class="btn btn-primary btn-sm"></input>
 			</form>
 		</div>
+
+		<div id="waiting">
+			<h3>Tu compañero de sala se ha ido o seleccionaste cambio de compañero...</h3>
+		</div>
+
 		<div id="camara">
-		<h3>Tu cam</h3>
+			<h3>Tu cam</h3>
 		</div>
 		<div id="camara_parter">
-		<h3>Compañero</h3>
-			
+			<h3>Compañero</h3>
 		</div>
 		<div id = "chatWrap">
 			<div id = "users"></div>
@@ -101,6 +108,8 @@
 				var $nickBox = $('#nickname');
 				//usuarios
 				var $users = $('#users');
+
+				var iniciado = 0;
 				//form para enviar el mensaje 
 				var $messageForm = $('#send-message');
 				//este es el input, el mensaje en si
@@ -116,15 +125,16 @@
 						hacemos un emit bajo el alias new user, aca hacemos algo distinto
 						si el nick es valido, escondemos la parte de ingreso de nick y 
 						mostramos la ventana del chat
-						OJO! Es la misma vista!
 					*/
 					socket.emit('new user', $nickBox.val(), function(data){
 						//Si se retorna true (este es el valor de callback desde el servidor) ingresamos al chat
 						if(data){
 							$('#nickWrap').hide();
 							$('#chatWrap').show();
+							$('#waiting').hide();							
 							$('#camara').show();
 							$('#camara_partner').show();
+							
 						}
 						//Si no, mostramos mensaje de error al usuario
 						else{
@@ -143,6 +153,18 @@
 					var html = '';
 					for(i=0; i<data.length; i++){
 						html += data[i]+'<br/>'
+						//Indicamos si el usuario ya esta en conferencia
+						if(data.length==2){
+							iniciado=1;
+							$('#waiting').hide();
+							$('#chatWrap').show();
+						}
+						//indicamos que el usuario se quedo solo o selecciono next
+						if(data.length==1&&iniciado==1){
+							$('#waiting').show();
+							$('#chatWrap').hide();
+						}
+							
 					}
 					$users.html(html);
 
@@ -176,25 +198,24 @@
 		</script>
 		<script src='http://static.opentok.com/webrtc/v2.2/js/opentok.min.js'></script>
 		<script type="text/javascript">
-		  // Initialize API key, session, and token...
-		  // Think of a session as a room, and a token as the key to get in to the room
-		  // Sessions and tokens are generated on your server and passed down to the client
-		  var apiKey = "45012012";
-		  var sessionId = "1_MX40NTAxMjAxMn5-MTQxMjU0MTEyMjExM35hSmhjU29Id0k0SjVyK1ZuVllid0xlUjN-fg";
-		  var token = "T1==cGFydG5lcl9pZD00NTAxMjAxMiZzaWc9OWJkMTY1ZTBlZjEwM2M1N2MyNGJkZWM1ODdmNTM0Yzg2ZTU0MjQ3YTpyb2xlPXB1Ymxpc2hlciZzZXNzaW9uX2lkPTFfTVg0ME5UQXhNakF4TW41LU1UUXhNalUwTVRFeU1qRXhNMzVoU21oalUyOUlkMGswU2pWeUsxWnVWbGxpZDB4bFVqTi1mZyZjcmVhdGVfdGltZT0xNDEyNTQxMTQxJm5vbmNlPTAuMzg0MDE3NTk5MjE0Nzg4OTUmZXhwaXJlX3RpbWU9MTQxMjU0NDY2NQ==";
 
-		  // Initialize session, set up event listeners, and connect
+		//inizializamos la sesion con el api key, sesion y token de la sala de chat
+		  var apiKey = "45012012";
+		  var sessionId = "2_MX40NTAxMjAxMn5-MTQxMjU0OTYzMDgzOX4yc0dFb2xvbkNHQ3hOK1BhZmx6SXRoQll-fg";
+		  var token = "T1==cGFydG5lcl9pZD00NTAxMjAxMiZzaWc9OTY3NTQwNWNjMjIzMGM4YWI5MjE2YjZiNTdlMzlkMDcwMzNhYTJjMDpyb2xlPXB1Ymxpc2hlciZzZXNzaW9uX2lkPTJfTVg0ME5UQXhNakF4TW41LU1UUXhNalUwT1RZek1EZ3pPWDR5YzBkRmIyeHZia05IUTNoT0sxQmhabXg2U1hSb1FsbC1mZyZjcmVhdGVfdGltZT0xNDEyNTQ5Njg0Jm5vbmNlPTAuMTIwNDAwMTk4NjE5OTUxODgmZXhwaXJlX3RpbWU9MTQxMzE1NDM3OA==";
+
+		  //se genera la conexion
 		  var session = OT.initSession(apiKey, sessionId);
 	 
 		  session.on("streamCreated", function(event) {
-			session.subscribe(event.stream,"camara_parter",{width:400,height:400} );
+			session.subscribe(event.stream,"camara_parter",{width:350,height:350} );
 		  });
 		 
 		  session.connect(token, function(error) {
 			if(error){
 				console.log(error.message);
 			}else{
-				session.publish('camara',{width:260,height:260});
+				session.publish('camara',{width:220,height:220});
 			}
 		  });
 
@@ -202,11 +223,9 @@
 		 
 		var token = opentok.generateToken(sessionId);
 
-		// Set the following constants with the API key and API secret
-// that you receive when you sign up to use the OpenTok API:
 var opentok = new OpenTok(API_KEY, API_SECRET);
  
-//Generate a basic session. Or you could use an existing session ID.
+//Se genera una sesion basica
 var sessionId;
 var token
 opentok.createSession({}, function(error, session) {
@@ -215,12 +234,11 @@ opentok.createSession({}, function(error, session) {
   } else {
     sessionId = session.sessionId;
     console.log("Session ID: " + sessionId);
-    //  Use the role value appropriate for the user:
+    // rol que cumplen los usuarios
     var tokenOptions = {};
     tokenOptions.role = "publisher";
     tokenOptions.data = "username=bob";
  
-    // Generate a token.
     token = opentok.generateToken(sessionId, tokenOptions);
     console.log(token);
   }
